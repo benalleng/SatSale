@@ -14,6 +14,7 @@ function payment(payment_data) {
             payment_uuid = invoice.uuid;
 
             $('#address').text(invoice.address).html();
+            $('#address-copy').text(invoice.address).html();
             $('#amount').text(invoice.btc_value).html();
             $('#amount_sats').text(Math.round(invoice.btc_value * 10**8)).html();
             $('#timer').text(Math.round(invoice.time_left)).html();
@@ -114,9 +115,14 @@ intervalTimer = setInterval(function () {
 function copyText(text) {
   navigator.clipboard.writeText(text);
 }
+
 function copyTextFromElement(elementID) {
   let element = document.getElementById(elementID); //select the element
   let elementText = element.textContent; //get the text content from the element
-  copyText(elementText); //use the copyText function below
-  alert("Copied address:" + elementText)
-}
+  let popup = document.getElementById("displayText");
+  copyText(elementText);
+  popup.classList.toggle("show");
+  setTimeout(function(){
+    popup.classList.toggle("show");
+  }, 1200);
+};
