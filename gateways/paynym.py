@@ -66,9 +66,7 @@ def insert_paynym_html(nym):
 
         .paynym:hover .hoverImg {
             visibility: visible;
-            -ms-transform: scale(2.5);
-            -webkit-transform: scale(2.5);
-            transform: scale(3) translate(38px, -25px);
+            transform: scale(3) translate(48px, -25px);
         }
     </style>
     """
