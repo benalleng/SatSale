@@ -71,7 +71,32 @@ def migrate_database(name: str = DEFAULT_DATABASE) -> None:
             conn.execute("ALTER TABLE payments RENAME fiat_currency TO base_currency")
         _set_database_schema_version(4, name)
 
-    #if schema_version < 5:
+    if schema_version < 5:
+        _log_migrate_database(4, 5, "Split off bolt11_invoice from address in payments table")
+        rows = load_invoices_from_db("1", name)
+        lightning_uuids = []
+        for row in rows:
+            if row["method"] in ["lightning", "clightning", "lnd"]:
+                lightning_uuids.append(row["uuid"])
+        with sqlite3.connect(name) as conn:
+            conn.execute("ALTER TABLE payments ADD bolt11_invoice TEXT")
+            # Could use batch UPDATE here maybe.
+            # Assume number of rows will be small enough for this to be
+            # good enough.
+            for uuid in lightning_uuids:
+                conn.execute(
+                    "UPDATE payments "
+                    "SET bolt11_invoice = address, address = NULL "
+                    "WHERE uuid = '{}'".format(uuid))
+        _set_database_schema_version(5, name)
+
+    if schema_version < 6:
+        _log_migrate_database(4, 5, "Add message column to payments table")
+        with sqlite3.connect(name) as conn:
+            conn.execute("ALTER TABLE payments ADD message TEXT")
+        _set_database_schema_version(6, name)
+
+    #if schema_version < 7:
     #   do next migration
 
     new_version = _get_database_schema_version(name)
@@ -87,7 +112,10 @@ def write_to_database(invoice: dict, name: str = DEFAULT_DATABASE) -> None:
     with sqlite3.connect(name) as conn:
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO payments (uuid,base_currency,base_value,btc_value,method,address,time,webhook,rhash) VALUES (?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO payments (uuid, base_currency, base_value, "
+            "btc_value, method, address, time, webhook, rhash, "
+            "bolt11_invoice, message) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (
                 invoice["uuid"],
                 invoice["base_currency"],
@@ -98,6 +126,8 @@ def write_to_database(invoice: dict, name: str = DEFAULT_DATABASE) -> None:
                 invoice["time"],
                 invoice["webhook"],
                 invoice["rhash"],
+                invoice["bolt11_invoice"],
+                invoice["message"]
             ),
         )
     return

@@ -2,7 +2,7 @@
 function payment(payment_data) {
     $('document').ready(function(){
         var payment_uuid;
-        var invoiceData = {amount: payment_data.amount, currency: payment_data.currency, method: payment_data.method};
+        var invoiceData = {amount: payment_data.amount, currency: payment_data.currency, method: payment_data.method, message: payment_data.message};
 
         // If a webhook URL is provided (woocommerce)
         if (payment_data.w_url) {
@@ -13,14 +13,19 @@ function payment(payment_data) {
             invoice = data.invoice;
             payment_uuid = invoice.uuid;
 
-            $('#address').text(invoice.address).html();
+            if (invoice.payment_method == 'lightning') {
+                $('#address').text(invoice.bolt11_invoice).html();
+            }
+            else {
+                $('#address').text(invoice.address).html();
             $('#address-copy').text(invoice.address).html();
+            }
             $('#amount').text(invoice.btc_value).html();
             $('#amount_sats').text(Math.round(invoice.btc_value * 10**8)).html();
             $('#timer').text(Math.round(invoice.time_left)).html();
             $('#paymentDetails').show();
 
-            if (invoice.btc_value >= invoice.onchain_dust_limit) {
+            if (invoice.btc_value >= invoice.onchain_dust_limit && invoice.btc_value <= invoice.ln_upper_limit) {
                 $('#paymentMethodSwitchButton').show();
             }
 

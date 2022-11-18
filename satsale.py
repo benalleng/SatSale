@@ -30,6 +30,7 @@ from node import xpub
 from node import lnd
 from node import lndhub
 from node import clightning
+from node.invoices import create_qr, encode_bitcoin_invoice, InvoiceType
 from utils import btc_amount_format
 
 from gateways import woo_webhook
@@ -103,7 +104,10 @@ invoice_model = api.model(
         "time": fields.Float(),
         "webhook": fields.String(),
         "rhash": fields.String(),
-        "time_left": fields.Decimal(),
+        "bolt11_invoice": fields.String(),
+        "time_left": fields.Float(),
+        "onchain_dust_limit": fields.Float(),
+        "message": fields.String()
     },
 )
 status_model = api.model(
@@ -120,7 +124,8 @@ status_model = api.model(
 @api.doc(
     params={
         "amount": "An amount.",
-        "currency": "(Opional) Currency units of the amount (defaults to `config.base_currency`).",
+        "currency": "(Optional) Currency units of the amount (defaults to `config.base_currency`).",
+        "message": "(Optional) Message to send among payment (purpose).",
         "method": "(Optional) Specify a payment method: `bitcoind` for onchain, `lnd` for lightning).",
         "w_url": "(Optional) Specify a webhook url to call after successful payment. Currently only supports WooCommerce plugin.",
     }
@@ -146,6 +151,9 @@ class create_payment(Resource):
             webhook = None
         else:
             logging.info("Webhook payment: {}".format(webhook))
+        payment_message = request.args.get("message")
+        if payment_message is not None and len(payment_message) > 35:
+            payment_message = payment_message[:35]
 
         # Create the payment using one of the connected nodes as a base
         # ready to recieve the invoice.
@@ -156,9 +164,9 @@ class create_payment(Resource):
 
         btc_value = get_btc_value(base_amount, currency)
 
-        if btc_value > 21000000:
+        if btc_value > 21000000 or (not node.is_onchain and btc_value > config.ln_upper_limit):
             logging.warning(
-                "Requested payment for {} {} BTC value {} too large (above 21M cap)".format(
+                "Requested payment for {} {} BTC value {} too large".format(
                     base_amount,
                     currency,
                     btc_value
@@ -190,22 +198,33 @@ class create_payment(Resource):
             "time": time.time(),
             "webhook": webhook,
             "onchain_dust_limit": config.onchain_dust_limit,
+            "ln_upper_limit": config.ln_upper_limit,
+            "message": payment_message,
         }
 
         # Get an address / invoice, and create a QR code
         try:
-            invoice["address"], invoice["rhash"] = node.get_address(
-                invoice["btc_value"], invoice["uuid"], config.payment_timeout
-            )
+            invoice["address"], invoice["bolt11_invoice"], invoice["rhash"] = \
+                node.get_address(
+                    invoice["btc_value"], invoice["uuid"],
+                    config.payment_timeout
+                )
         except Exception as e:
             logging.error("Failed to fetch address: {}".format(e))
             return {"message": "Error fetching address. Check config.."}, 522
 
-        if not invoice["address"]:
+        if not invoice["address"] and not invoice["bolt11_invoice"]:
             logging.error("Failed to fetch address")
             return {"message": "Error fetching address. Check config.."}, 522
 
-        node.create_qr(invoice["uuid"], invoice["address"], invoice["btc_value"])
+        if invoice["method"] == "lightning":
+            invoice_type = InvoiceType.BOLT11
+        else:
+            invoice_type = InvoiceType.BIP21
+
+        btc_invoice_str = encode_bitcoin_invoice(
+            invoice["uuid"], invoice, invoice_type)
+        create_qr(invoice["uuid"], btc_invoice_str)
 
         # Save invoice to database
         database.write_to_database(invoice)
@@ -368,7 +387,7 @@ enabled_payment_methods = []
 for method in config.payment_methods:
     #print(method)
     if method['name'] == "bitcoind":
-        bitcoin_node = bitcoind.btcd(method)
+        bitcoin_node = bitcoind.bitcoind(method)
         logging.info("Connection to bitcoin node successful.")
         enabled_payment_methods.append("onchain")
 
