@@ -3,6 +3,7 @@ import qrcode
 import logging
 
 import config
+from decimal import Decimal
 
 # if False:  # config.tor_clightningrpc_host is not None:
 #     from gateways.tor import session
@@ -76,7 +77,7 @@ class clightning:
     # Create lightning invoice
     def create_clightning_invoice(self, btc_amount, label, expiry):
         # Multiplying by 10^8 to convert to satoshi units
-        msats_amount = int(float(btc_amount) * 10 ** (3 + 8))
+        msats_amount = round(Decimal(btc_amount) * 10 ** (3 + 8))
         lnd_invoice = self.clightning.invoice(
             msats_amount, label, label, expiry
         )
@@ -101,7 +102,7 @@ class clightning:
             unconf_paid = 0
         else:
             # Store amount paid and convert to BTC units
-            conf_paid = int(invoice["msatoshi_received"]) / 10 ** (3 + 8)
+            conf_paid = Decimal(invoice["msatoshi_received"]) / 10 ** (3 + 8)
             unconf_paid = 0
 
         return conf_paid, unconf_paid

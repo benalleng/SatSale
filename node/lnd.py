@@ -3,6 +3,7 @@ import time
 import os
 import json
 from base64 import b64decode
+from decimal import Decimal
 from google.protobuf.json_format import MessageToJson
 import qrcode
 import logging
@@ -126,7 +127,7 @@ class lnd:
     # Create lightning invoice
     def create_lnd_invoice(self, btc_amount, memo=None, description_hash=None, expiry=3600):
         # Multiplying by 10^8 to convert to satoshi units
-        sats_amount = int(float(btc_amount) * 10 ** 8)
+        sats_amount = round(Decimal(btc_amount) * 10 ** 8)
         res = self.lnd.add_invoice(
             value=sats_amount, memo=memo, description_hash=description_hash, expiry=expiry
         )

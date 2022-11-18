@@ -2,6 +2,7 @@ import json
 import logging
 import qrcode
 import time
+from decimal import Decimal
 from typing import Tuple
 
 import config
@@ -54,7 +55,7 @@ class lndhub:
 
     def create_lndhub_invoice(self, btc_amount: float, memo: str = None,
                               expiry: int = 3600) -> Tuple[str, str]:
-        sats_amount = int(float(btc_amount) * 10 ** 8)
+        sats_amount = round(Decimal(btc_amount) * 10 ** 8)
         ret = self.lndhub.create_invoice(amt=sats_amount, memo=memo)
         return ret["payment_request"], ret["r_hash"]
 
