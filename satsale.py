@@ -5,6 +5,7 @@ from flask import (
     make_response
 )
 from flask_restx import Resource, Api, fields
+from decimal import *
 import time
 import os
 import uuid
@@ -102,7 +103,7 @@ invoice_model = api.model(
         "time": fields.Float(),
         "webhook": fields.String(),
         "rhash": fields.String(),
-        "time_left": fields.Float(),
+        "time_left": fields.Decimal(),
     },
 )
 status_model = api.model(
@@ -236,7 +237,7 @@ class check_payment(Resource):
         }
 
         # If payment is expired
-        if status["time_left"] <= 0:
+        if status["time_left"] <= 0.9:
             response.update({"expired": 1})
             code = 202
         else:
@@ -310,7 +311,7 @@ def check_payment_status(uuid):
         status["time_left"] = config.payment_timeout - (time.time() - invoice["time"])
 
     # If payment has not expired, then we're going to check for any transactions
-    if status["time_left"] > 0:
+    if status["time_left"] > 0.9:
         node = get_node(invoice["method"])
         if (node.config['name'] == "lnd") or (node.config['name'] == "lndhub"):
             conf_paid, unconf_paid = node.check_payment(invoice["rhash"])
@@ -343,7 +344,6 @@ def check_payment_status(uuid):
                     "unconfirmed_paid": btc_amount_format(unconf_paid),
                 }
             )
-
     logging.debug("Invoice {} status: {}".format(uuid, status))
     return status
 
