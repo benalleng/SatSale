@@ -5,7 +5,6 @@ from flask import (
     make_response
 )
 from flask_restx import Resource, Api, fields
-from decimal import *
 import time
 import os
 import uuid

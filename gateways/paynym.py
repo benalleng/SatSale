@@ -1,43 +1,43 @@
-import requests
 import logging
+import requests
 
-paynym_site = "https://paynym.is/"
+PAYNYM_SITE = "https://paynym.is/"
 
 
 def get_paynym(nym):
     if nym is None:
         return None
 
-    r = requests.get(paynym_site + nym)
+    req = requests.get(PAYNYM_SITE + nym)
 
-    if r.status_code == 200:
-        nym_html = r.text
+    if req.status_code == 200:
+        nym_html = req.text
         nym_html = nym_html.split('<span class="paycode">')[1].split("</span>")[0]
         return nym_html
 
 
 def insert_paynym_html(nym):
     donate_file = "templates/donate.html"
-    with open(donate_file, "r") as f:
-        donate_html = f.read()
+    with open(donate_file, "r") as file:
+        donate_html = file.read()
 
     if 'class="paynym"' in donate_html:
         logging.info("Found existing paynym HTML in donate.html.")
         return
 
     payment_code = get_paynym(nym)
-    avatar_url = paynym_site + "{}/avatar".format(payment_code)
-    codeimage_url = paynym_site + "{}/codeimage".format(payment_code)
+    avatar_url = PAYNYM_SITE + "{}/avatar".format(payment_code)
+    codeimage_url = PAYNYM_SITE + "{}/codeimage".format(payment_code)
 
     logging.info("Fetching paynym images...")
 
     avatar_data = requests.get(avatar_url).content
-    with open("static/avatar.png", "wb") as f:
-        f.write(avatar_data)
+    with open("static/avatar.png", "wb") as file:
+        file.write(avatar_data)
 
     codeimage_data = requests.get(codeimage_url).content
-    with open("static/codeimage.png", "wb") as f:
-        f.write(codeimage_data)
+    with open("static/codeimage.png", "wb") as file:
+        file.write(codeimage_data)
 
     css_html = """
     <style>
@@ -86,7 +86,7 @@ def insert_paynym_html(nym):
         + """
         <small style="vertical-align:middle"><a href="{}" target="_blank">{}</a></small>
         """.format(
-            paynym_site + nym, nym
+            PAYNYM_SITE + nym, nym
         )
         + """
     </div>
@@ -98,9 +98,8 @@ def insert_paynym_html(nym):
     modified_html = modified_html.replace(
         '<div id="paymentForm">', nym_html + '\n\t<div id="paymentForm">'
     )
-
-    with open(donate_file, "w") as f:
-        f.write(modified_html)
+    with open(donate_file, "w") as file:
+        file.write(modified_html)
 
     logging.info("Wrote donate.html with paynym tags")
 

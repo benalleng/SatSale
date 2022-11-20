@@ -28,6 +28,37 @@
     <meta property="twitter:description" content="Lightweight Bitcoin payment processor written in easily deployable Python. ">
     <meta property="twitter:image" content="https://user-images.githubusercontent.com/24557779/109666538-60ee4800-7bc3-11eb-8615-2cb1b239cc11.png">
 
+
+    <style>
+        .imageInn img {
+            border-radius:50px;
+            position: relative;
+        }
+
+        .paynym {
+            position: relative;
+            float: left;
+        }
+
+        .hoverImg {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            visibility: hidden;
+            object-fit: cover;
+            transition: transform .2s;
+        }
+
+        .paynym-qr {
+            box-shadow: 0 8px 20px 0 rgba(0,0,0,0.45);
+        }
+
+        .paynym:hover .hoverImg {
+            visibility: visible;
+            transform: scale(3) translate(42%, -13%);
+        }
+    </style>
+    
 </head>
 
 
@@ -43,7 +74,23 @@
             </div>
         </div>
 
-        <div id="paymentForm">
+        
+    <div class="paynym">
+        <div class="imageInn">
+            <img width="100px" style="border-radius:50px;" src="{{ url_for('static', filename='avatar.png') }}">
+        </div>
+        <div class="hoverImg">
+            <a href="{}" target="_blank">
+                <img id="qrImage" class="paynym-qr" width="100px" src="{{ url_for('static', filename='codeimage.png') }}">
+            </a>
+        </div>
+        
+        <small style="vertical-align:middle"><a href="https://paynym.is/+frostyresonance63C" target="_blank">+frostyresonance63C</a></small>
+        
+    </div>
+    <br>
+    
+	<div id="paymentForm">
             <form id="pay" action='/pay'>
                 <div style="display:block;text-align: center;">
                     <h2 style="margin:0;">Amount:
@@ -56,7 +103,7 @@
                     </h2>
                     <br>
                     <h3 style="margin:0;">Message (optional):<h3>
-                    <textarea class="donate_input" name="message" rows="2" maxlength="35"></textarea>
+                    <textarea class="donate_input" name="message" rows="2" maxlength="35" placeholder="Send a Note!"></textarea>
                     <br>
                     <input class="button button1" style="width:40%" type="submit" value="Donate">
                 </div>

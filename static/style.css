@@ -112,6 +112,7 @@ h1 {
     -ms-transform: scale(2.5); /* IE 9 */
     -webkit-transform: scale(2.5); /* Safari 3-8 */
     transform: scale(3) translate(-38px, 26px);
+    z-index: 3;
 }
 
 .donate_input {
@@ -133,16 +134,15 @@ h1 {
     position: relative;
     font-weight: 700;
     top: -3px;
-    left: 25%;
-    margin-left: -80px;
+    margin: auto;
     width: 80%;
-    background-color: var(--preset--html--background);
-    color: #fff;
+    background-color: #fff;
     color: var(--preset--primary--font--color);
     text-align: center;
     border-radius: 6px;
     padding: 8px 4px;
     display: none;
+    z-index: 2;
 }
 
 .displayText::before {
